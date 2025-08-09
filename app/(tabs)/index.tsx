@@ -3,6 +3,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useElevenConversation } from "@/hooks/useElevenConversation";
+import { useRetrieval } from "@/hooks/useRetrieval";
 import { Audio } from "expo-av";
 import { useEffect, useState } from "react"; // Add useEffect import
 import {
@@ -34,6 +35,26 @@ export default function HomeScreen() {
     publicAgentId: "agent_0701k284yrmjfgksrhc5cw0wg2em",
     signedUrlEndpoint: "/api/signed-url",
   });
+
+  // RAG retrieval hook
+  const { add: addVector, search: searchVectors } = useRetrieval();
+
+  // Helper to build & send RAG context for a new user transcript if conversation active
+  const injectRagContext = async (transcript: string) => {
+    try {
+      // Add the incoming user text first so immediate follow-up queries can reference it
+      await addVector({ type: 'message', text: transcript });
+      // Retrieve similar past items (excluding the just-added one would require ID filtering; negligible for MVP)
+      const hits = await searchVectors(transcript, 4, 0.18);
+      if (hits.length && conversation.status === 'connected') {
+        const ragBlock = hits.map((h, i) => `[C${i + 1}] ${h.text}`).join('\n');
+        // Send condensed context update; keep short to avoid flooding token budget
+        conversation.sendContext(`RAG_CONTEXT_BEGIN\n${ragBlock}\nRAG_CONTEXT_END`);
+      }
+    } catch (e) {
+      console.warn('[RAG] inject failed', e);
+    }
+  };
 
   // Request permissions on component mount
   useEffect(() => {
@@ -113,8 +134,8 @@ export default function HomeScreen() {
       console.log("Recording stopped and stored at", uri);
       setRecording(null);
 
-      // Add user message
-      const userMessage: Message = {
+  // Add user message (text placeholder for recorded audio)
+  const userMessage: Message = {
         id: Date.now().toString(),
         text: `Audio recorded (${Math.floor(Math.random() * 5) + 1}s)`,
         isUser: true,
@@ -122,18 +143,23 @@ export default function HomeScreen() {
       };
       setMessages((prev) => [...prev, userMessage]);
 
+  // RAG: treat the placeholder text as transcript (later replace with real STT result)
+  injectRagContext(userMessage.text);
+
       // TODO: Process audio file here
       console.log("Audio file ready for API:", uri);
 
       // Mock AI response after 1 second
       setTimeout(() => {
-        const aiMessage: Message = {
+  const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           text: "I hear you! This is where the AI response would go after processing your audio.",
           isUser: false,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, aiMessage]);
+  // Store assistant message for future retrieval context
+  addVector({ type: 'message', text: aiMessage.text });
       }, 1000);
     } catch (error) {
       console.error("Error stopping recording:", error);
