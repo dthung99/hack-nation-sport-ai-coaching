@@ -2,8 +2,9 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useElevenConversation } from "@/hooks/useElevenConversation";
 import { Audio } from "expo-av";
-import React, { useEffect, useState } from "react"; // Add useEffect import
+import { useEffect, useState } from "react"; // Add useEffect import
 import {
   Alert,
   ScrollView,
@@ -26,6 +27,13 @@ export default function HomeScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null); // Add permission state
   const colorScheme = useColorScheme();
+
+  // ElevenLabs conversation hook (configure as needed)
+  const conversation = useElevenConversation({
+    usePublicAgent: true, // set false and implement backend for private agents
+    publicAgentId: "agent_0701k284yrmjfgksrhc5cw0wg2em",
+    signedUrlEndpoint: "/api/signed-url",
+  });
 
   // Request permissions on component mount
   useEffect(() => {
@@ -222,6 +230,24 @@ export default function HomeScreen() {
         <ThemedText style={styles.subtitle}>
           Hold the button to talk with your mental wellness coach
         </ThemedText>
+        {/* Conversation controls */}
+        <View style={styles.conversationRow}>
+          {conversation.status !== "connected" ? (
+            <TouchableOpacity style={styles.convButton} onPress={conversation.start}>
+              <Text style={styles.convButtonLabel}>Start Conversation</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.convButton} onPress={conversation.stop}>
+              <Text style={styles.convButtonLabel}>End Conversation</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {conversation.error ? (
+          <ThemedText style={styles.errorText}>{conversation.error}</ThemedText>
+        ) : null}
+        <ThemedText style={styles.statusText}>
+          Status: {conversation.status} | Speaking: {conversation.isSpeaking ? "Yes" : "No"}
+        </ThemedText>
       </View>
 
       {/* Chat Messages */}
@@ -275,6 +301,32 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     alignItems: "center",
+  },
+  conversationRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  convButton: {
+    backgroundColor: '#0a7ea4',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  convButtonLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorText: {
+    marginTop: 8,
+    color: 'red',
+    textAlign: 'center',
+  },
+  statusText: {
+    marginTop: 4,
+    fontSize: 12,
+    opacity: 0.7,
   },
   subtitle: {
     textAlign: "center",
