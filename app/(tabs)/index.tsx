@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Audio } from "expo-av";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react"; // Add useEffect import
 import {
   Alert,
   ScrollView,
@@ -24,14 +24,44 @@ export default function HomeScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null); // Add permission state
   const colorScheme = useColorScheme();
 
-  const handleStartRecording = async () => {
+  // Request permissions on component mount
+  useEffect(() => {
+    requestPermissions();
+  }, []);
+
+  const requestPermissions = async () => {
     try {
       console.log("Requesting permissions..");
       const permission = await Audio.requestPermissionsAsync();
 
-      if (permission.status !== "granted") {
+      if (permission.status === "granted") {
+        setHasPermission(true);
+        console.log("Audio permission granted");
+      } else {
+        setHasPermission(false);
+        Alert.alert(
+          "Permission required",
+          "Please grant microphone permission to use voice chat"
+        );
+      }
+    } catch (error) {
+      console.error("Error requesting permissions:", error);
+      setHasPermission(false);
+    }
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      if (isRecording) {
+        console.log("Already recording");
+        return;
+      }
+
+      // Check if we have permission before proceeding
+      if (!hasPermission) {
         Alert.alert(
           "Permission required",
           "Please grant microphone permission to use voice chat"
@@ -132,6 +162,57 @@ export default function HomeScreen() {
       </ThemedText>
     </View>
   );
+
+  // Show loading state while checking permissions
+  if (hasPermission === null) {
+    return (
+      <ThemedView
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ThemedText>Requesting microphone permission...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  // Show permission denied state
+  if (hasPermission === false) {
+    return (
+      <ThemedView
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center", padding: 20 },
+        ]}
+      >
+        <ThemedText
+          type="title"
+          style={{ textAlign: "center", marginBottom: 20 }}
+        >
+          Microphone Permission Required
+        </ThemedText>
+        <ThemedText
+          style={{ textAlign: "center", marginBottom: 30, opacity: 0.7 }}
+        >
+          This app needs microphone access to record your voice messages for the
+          AI coach.
+        </ThemedText>
+        <TouchableOpacity
+          style={[
+            styles.recordButton,
+            { backgroundColor: Colors[colorScheme ?? "light"].tint },
+          ]}
+          onPress={requestPermissions}
+        >
+          <Text style={styles.recordButtonText}>🎤</Text>
+        </TouchableOpacity>
+        <ThemedText style={styles.recordHint}>
+          Tap to grant permission
+        </ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
