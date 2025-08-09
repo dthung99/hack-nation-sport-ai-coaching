@@ -53,7 +53,7 @@ export default function HomeScreen() {
       console.log("Recording started");
     } catch (err) {
       console.error("Failed to start recording", err);
-      Alert.alert("Error", "Failed to start recording");
+      // Alert.alert("Error", "Failed to start recording");
     }
   };
 
@@ -99,7 +99,7 @@ export default function HomeScreen() {
       }, 1000);
     } catch (error) {
       console.error("Error stopping recording:", error);
-      Alert.alert("Error", "Failed to stop recording");
+      // Alert.alert("Error", "Failed to stop recording");
     }
   };
 
