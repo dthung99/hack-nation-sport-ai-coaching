@@ -50,12 +50,17 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[
                 styles.mainButton,
-                { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                { 
+                  backgroundColor: conversation.status === "connecting" 
+                    ? Colors[colorScheme ?? "light"].icon 
+                    : Colors[colorScheme ?? "light"].tint 
+                },
               ]}
               onPress={conversation.start}
+              disabled={conversation.status === "connecting"} // ADD THIS LINE
             >
               <ThemedText style={styles.buttonText}>
-                Start Conversation
+                {conversation.status === "connecting" ? "Connecting..." : "Start Conversation"}
               </ThemedText>
             </TouchableOpacity>
           ) : (
@@ -69,7 +74,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
-
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
           <ThemedText style={styles.instructionText}>
