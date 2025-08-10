@@ -3,13 +3,140 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import React, { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
 
 export default function GuidedExerciseScreen() {
   const [isActive, setIsActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [breathingPhase, setBreathingPhase] = useState<
+    "inhale" | "hold" | "exhale"
+  >("inhale");
+  const [phaseTimer, setPhaseTimer] = useState(4);
   const colorScheme = useColorScheme();
+
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(0.8)).current;
+
+  // Countdown timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isActive && !isPaused && countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setIsActive(false);
+      setIsPaused(false);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, isPaused, countdown]);
+
+  // Breathing cycle timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isActive && !isPaused) {
+      interval = setInterval(() => {
+        setPhaseTimer((prev) => {
+          if (prev <= 1) {
+            // Move to next phase
+            setBreathingPhase((current: "inhale" | "hold" | "exhale") => {
+              if (current === "inhale") return "hold";
+              if (current === "hold") return "exhale";
+              return "inhale";
+            });
+            return 4; // Reset timer for next phase
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isActive, isPaused]);
+
+  // Animation based on breathing phase
+  useEffect(() => {
+    if (!isActive || isPaused) {
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      Animated.timing(opacityAnim, {
+        toValue: 0.8,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    if (breathingPhase === "inhale") {
+      Animated.timing(scaleAnim, {
+        toValue: 1.3,
+        duration: 4000,
+        useNativeDriver: true,
+      }).start();
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      }).start();
+    } else if (breathingPhase === "hold") {
+      // Keep current scale and opacity
+    } else if (breathingPhase === "exhale") {
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      }).start();
+      Animated.timing(opacityAnim, {
+        toValue: 0.6,
+        duration: 4000,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [breathingPhase, isActive, isPaused, scaleAnim, opacityAnim]);
+
+  const getInstructionText = () => {
+    if (!isActive) return "Press Start";
+    if (isPaused) return "Paused";
+    switch (breathingPhase) {
+      case "inhale":
+        return `Breathe In (${phaseTimer})`;
+      case "hold":
+        return `Hold (${phaseTimer})`;
+      case "exhale":
+        return `Breathe Out (${phaseTimer})`;
+      default:
+        return "Breathe";
+    }
+  };
+
+  const handleStart = () => {
+    setIsActive(true);
+    setIsPaused(false);
+    if (countdown === 0) {
+      setCountdown(60); // Reset timer only if completely finished
+    }
+    // Don't reset breathing phase if resuming from pause
+    if (!isPaused) {
+      setBreathingPhase("inhale");
+      setPhaseTimer(4);
+    }
+  };
+
+  const handlePauseResume = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const handleEndSession = () => {
+    setIsActive(false);
+    setIsPaused(false);
+    setCountdown(60); // Reset timer completely
+    setBreathingPhase("inhale");
+    setPhaseTimer(4);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -21,18 +148,22 @@ export default function GuidedExerciseScreen() {
         </ThemedText>
       </View>
 
-      {/* Animation Area - Placeholder for breathing circle */}
+      {/* Animation Area */}
       <View style={styles.animationContainer}>
-        <View
+        <Animated.View
           style={[
             styles.breathingCircle,
-            { backgroundColor: Colors[colorScheme ?? "light"].tint },
+            {
+              backgroundColor: Colors[colorScheme ?? "light"].tint,
+              transform: [{ scale: scaleAnim }],
+              opacity: opacityAnim,
+            },
           ]}
         >
           <ThemedText style={styles.instructionText}>
-            {isActive ? "Breathe In" : "Press Start"}
+            {getInstructionText()}
           </ThemedText>
-        </View>
+        </Animated.View>
       </View>
 
       {/* Timer */}
@@ -45,28 +176,40 @@ export default function GuidedExerciseScreen() {
 
       {/* Controls */}
       <View style={styles.controlsContainer}>
-        <TouchableOpacity
-          style={[
-            styles.controlButton,
-            { backgroundColor: Colors[colorScheme ?? "light"].tint },
-          ]}
-          onPress={() => setIsActive(!isActive)}
-        >
-          <ThemedText style={styles.buttonText}>
-            {isActive ? "Stop" : "Start"}
-          </ThemedText>
-        </TouchableOpacity>
-
-        {isActive && (
+        {!isActive ? (
           <TouchableOpacity
             style={[
-              styles.endButton,
-              { backgroundColor: Colors[colorScheme ?? "light"].icon },
+              styles.controlButton,
+              { backgroundColor: Colors[colorScheme ?? "light"].tint },
             ]}
-            onPress={() => setIsActive(false)}
+            onPress={handleStart}
           >
-            <ThemedText style={styles.buttonText}>End Session</ThemedText>
+            <ThemedText style={styles.buttonText}>Start</ThemedText>
           </TouchableOpacity>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                { backgroundColor: Colors[colorScheme ?? "light"].tint },
+              ]}
+              onPress={handlePauseResume}
+            >
+              <ThemedText style={styles.buttonText}>
+                {isPaused ? "Resume" : "Pause"}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.endButton,
+                { backgroundColor: Colors[colorScheme ?? "light"].icon },
+              ]}
+              onPress={handleEndSession}
+            >
+              <ThemedText style={styles.buttonText}>End Session</ThemedText>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </ThemedView>
@@ -99,12 +242,12 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     justifyContent: "center",
     alignItems: "center",
-    opacity: 0.8,
   },
   instructionText: {
     fontSize: 18,
     fontWeight: "bold",
     color: "white",
+    textAlign: "center",
   },
   timerContainer: {
     alignItems: "center",
