@@ -64,12 +64,14 @@ export default function MyCoachTeamScreen() {
 			convo.handoffTo(coachId, 'User selected coach');
 		}
 	};
-	const tryCoachPhrase = (phrase: string) => {
+	// Removed sample phrase trigger UI; keep function if future quick prompts reinstated
+	const tryCoachPhrase = React.useCallback((phrase: string) => {
+		if (!phrase) return;
 		if (convo.status !== 'connected') {
 			convo.start();
 			setTimeout(() => { convo.sendText(phrase); }, 1500);
 		} else { convo.sendText(phrase); }
-	};
+	},[convo]);
 
 	return (
 		<ThemedView style={styles.container}>
@@ -126,11 +128,8 @@ export default function MyCoachTeamScreen() {
 										</View>
 									</View>
 									<View style={styles.actionButtons}>
-										<TouchableOpacity style={[styles.actionButton,{ backgroundColor: convo.currentAgentKey === coach.id ? 'rgba(255,255,255,0.18)' : Colors[colorScheme ?? 'light'].tint }]} onPress={()=>startWithCoach(coach.id)}>
-											<ThemedText style={[styles.actionButtonText,{ color: 'white'}]}>{convo.status==='connected'&&convo.currentAgentKey===coach.id?'Active':`Start with ${coach.name}`}</ThemedText>
-										</TouchableOpacity>
-										<TouchableOpacity style={[styles.actionButton,styles.secondaryButton,{ backgroundColor: convo.currentAgentKey === coach.id ? 'rgba(255,255,255,0.18)' : palette.secondaryButtonBg }]} onPress={()=>tryCoachPhrase(coach.samplePhrase)}>
-											<ThemedText style={[styles.actionButtonText,styles.secondaryButtonText, { color: convo.currentAgentKey === coach.id ? 'white' : (isDark?'#ECEDEE':'#333') } ]}>Try Sample</ThemedText>
+										<TouchableOpacity style={[styles.actionButton, convo.currentAgentKey === coach.id ? styles.actionButtonActive : styles.actionButtonInactive]} onPress={()=>startWithCoach(coach.id)}>
+											<ThemedText style={[styles.actionButtonText, convo.currentAgentKey === coach.id ? styles.actionButtonTextActive : undefined]}>{convo.status==='connected'&&convo.currentAgentKey===coach.id?'Active':`Start with ${coach.name}`}</ThemedText>
 										</TouchableOpacity>
 									</View>
 								</View>
@@ -139,7 +138,7 @@ export default function MyCoachTeamScreen() {
 					</ScrollView>
 				</View>
 					{(isTablet || isLargeScreen) && (
-						<View style={[styles.rightPanel,{ width: isLargeScreen?340:300 }]}> 
+						<View style={styles.rightPanel}> 
 						<ThemedText style={styles.rightPanelTitle}>Recent Conversation</ThemedText>
 						{convo.lastSwitch && (
 							<View style={styles.lastSwitchRow}>
@@ -182,9 +181,9 @@ const styles = StyleSheet.create({
 	container:{flex:1,paddingTop:isTablet?72:56},
 	contentWrapper:{flex:1,width:'100%',maxWidth:1400,alignSelf:'center',paddingHorizontal:isLargeScreen?48:(isTablet?36:18),paddingBottom:32},
 	mainRow:{flex:1,flexDirection:'column'},
-	mainRowWide:{flexDirection:'row',gap:40},
+	mainRowWide:{flexDirection:'row',gap:32},
 	leftColumn:{flex:1},
-	rightPanel:{width:isLargeScreen?420:(isTablet?340:0),paddingTop:4},
+	rightPanel:{width:isLargeScreen?260:(isTablet?240:0),paddingTop:4},
 	rightPanelTitle:{fontSize:isTablet?18:16,fontWeight:'600',marginBottom:12,opacity:0.75},
 	sideTranscript:{flex:1,borderWidth:1,borderColor:'rgba(0,0,0,0.08)',borderRadius:16,backgroundColor:'#fcfcfc'},
 	sideTranscriptContent:{padding:14},
@@ -202,8 +201,8 @@ const styles = StyleSheet.create({
 	sessionMetaText:{fontSize:12,opacity:0.65},
 	scrollContainer:{flex:1},
 	scrollContent:{paddingBottom:isTablet?56:32,paddingTop:4},
-	coachGrid:{flexDirection:'row',flexWrap:'wrap',rowGap:32,columnGap:32},
-	coachCard:{borderRadius:22,padding:isTablet?26:20,shadowOffset:{width:0,height:2},shadowOpacity:0.08,shadowRadius:10,elevation:2,width:(isTablet||isLargeScreen)?'31.5%':'100%',position:'relative',minHeight:isTablet?340:undefined},
+	coachGrid:{flexDirection:'row',flexWrap:'wrap',rowGap:28,columnGap:24},
+	coachCard:{borderRadius:22,padding:isTablet?26:20,shadowOffset:{width:0,height:2},shadowOpacity:0.08,shadowRadius:10,elevation:2,width:(isTablet||isLargeScreen)?'30.5%':'100%',position:'relative',minHeight:isTablet?340:undefined},
 	switchBadge:{position:'absolute',top:10,right:10,backgroundColor:'rgba(0,0,0,0.3)',paddingHorizontal:10,paddingVertical:4,borderRadius:12},
 	switchBadgeText:{fontSize:isTablet?12:11,color:'white',fontWeight:'600'},
 	cardHeader:{flexDirection:'column',alignItems:'flex-start',marginBottom:isTablet?18:14},
@@ -215,8 +214,11 @@ const styles = StyleSheet.create({
 	specialtyText:{fontSize:isTablet?14:12,opacity:0.8},
 	actionButtons:{flexDirection:isTablet?'row':'column',gap:isTablet?14:10,marginTop:isTablet?14:12},
 	actionButton:{flex:isTablet?1:undefined,paddingVertical:isTablet?12:10,paddingHorizontal:isTablet?18:15,borderRadius:16,alignItems:'center',minHeight:isTablet?48:42,justifyContent:'center'},
+	actionButtonInactive:{backgroundColor: Colors[(useColorScheme()??'light')].tint},
+	actionButtonActive:{backgroundColor:'rgba(255,255,255,0.18)',borderWidth:1,borderColor:'rgba(255,255,255,0.25)'},
 	secondaryButton:{},
 	actionButtonText:{fontSize:isTablet?16:14,fontWeight:'500',textAlign:'center'},
+	actionButtonTextActive:{color:'#ffffff'},
 	secondaryButtonText:{color:'#333'},
 	transcriptSection:{maxHeight:170,paddingHorizontal:18,paddingVertical:14,borderTopWidth:1},
 	transcriptTitle:{fontSize:15,fontWeight:'600',marginBottom:10,opacity:0.7},

@@ -4,7 +4,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import React from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View, Dimensions } from "react-native";
 
 interface SummaryCard {
   title: string;
@@ -40,8 +40,21 @@ const recentTopics = [
   "Recovery mindset",
 ];
 
+const { width: screenWidth } = Dimensions.get('window');
+const isTablet = screenWidth > 768;
+const isLargeScreen = screenWidth > 1024;
+
 export default function MotivationDashboardScreen() {
   const colorScheme = useColorScheme();
+  const isDark = (colorScheme ?? 'light') === 'dark';
+  const palette = React.useMemo(()=>({
+    accent: isDark ? '#0a84ff' : Colors[colorScheme ?? 'light'].tint,
+    surface: isDark ? '#1F2223' : '#f5f5f5',
+    surfaceAlt: isDark ? '#242728' : '#ffffff',
+    tag: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    border: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
+    muted: isDark ? 'rgba(255,255,255,0.68)' : '#333'
+  }),[isDark,colorScheme]);
 
   const handleCardPress = (card: SummaryCard) => {
     // TODO: Navigate to detailed view or replay related session
@@ -50,18 +63,12 @@ export default function MotivationDashboardScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <ThemedText type="title">Dashboard</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Track your mental wellness journey
-        </ThemedText>
-      </View>
-
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={[styles.contentWrapper,{ paddingHorizontal:isLargeScreen?48:(isTablet?36:20) }]} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText type="title">Dashboard</ThemedText>
+          <ThemedText style={[styles.subtitle,{ color: palette.muted }]}>Track your mental wellness journey</ThemedText>
+        </View>
         {/* Summary Cards */}
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>
@@ -70,7 +77,7 @@ export default function MotivationDashboardScreen() {
           {mockData.map((card, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.summaryCard}
+              style={[styles.summaryCard,{ backgroundColor: palette.surfaceAlt, borderColor: palette.border }]}
               onPress={() => handleCardPress(card)}
             >
               <View style={styles.cardHeader}>
@@ -79,10 +86,10 @@ export default function MotivationDashboardScreen() {
                   <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
                     {card.title}
                   </ThemedText>
-                  <ThemedText style={styles.cardValue}>{card.value}</ThemedText>
+                  <ThemedText style={[styles.cardValue,{ color: palette.accent }]}>{card.value}</ThemedText>
                 </View>
               </View>
-              <ThemedText style={styles.cardDescription}>
+              <ThemedText style={[styles.cardDescription,{ color: palette.muted }]}>
                 {card.description}
               </ThemedText>
             </TouchableOpacity>
@@ -90,14 +97,14 @@ export default function MotivationDashboardScreen() {
         </View>
 
         {/* Mood Graph Placeholder */}
-        <View style={styles.section}>
+    <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Mood Over Time
           </ThemedText>
           <View
             style={[
               styles.graphPlaceholder,
-              { backgroundColor: Colors[colorScheme ?? "light"].tint },
+      { backgroundColor: palette.accent },
             ]}
           >
             <ThemedText style={styles.graphText}>
@@ -110,14 +117,14 @@ export default function MotivationDashboardScreen() {
         </View>
 
         {/* Recent Topics */}
-        <View style={styles.section}>
+  <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Recent Discussion Topics
           </ThemedText>
           {recentTopics.map((topic, index) => (
-            <TouchableOpacity key={index} style={styles.topicItem}>
-              <ThemedText style={styles.topicText}>• {topic}</ThemedText>
-              <ThemedText style={styles.topicAction}>Replay →</ThemedText>
+            <TouchableOpacity key={index} style={[styles.topicItem,{ backgroundColor: palette.surfaceAlt, borderColor: palette.border }]}> 
+              <ThemedText style={[styles.topicText,{ color: palette.muted }]}>{`• ${topic}`}</ThemedText>
+              <ThemedText style={[styles.topicAction,{ color: palette.accent }]}>Replay →</ThemedText>
             </TouchableOpacity>
           ))}
         </View>
@@ -127,22 +134,16 @@ export default function MotivationDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-  },
+  container:{ flex:1,paddingTop:isTablet?72:56 },
+  contentWrapper:{ width:'100%',maxWidth:1100,alignSelf:'center',paddingBottom:48 },
   header: {
-    padding: 20,
+    paddingVertical:8,
     alignItems: "center",
   },
   subtitle: {
     textAlign: "center",
     marginTop: 8,
     opacity: 0.7,
-  },
-  scrollContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
   },
   section: {
     marginBottom: 25,
@@ -152,14 +153,14 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
   },
   summaryCard: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 18,
+    padding: isTablet?24:18,
     marginBottom: 12,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth:1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -179,8 +180,7 @@ const styles = StyleSheet.create({
   },
   cardValue: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#0a7ea4",
+  fontWeight: "bold",
   },
   cardDescription: {
     fontSize: 14,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   graphPlaceholder: {
     height: 150,
-    borderRadius: 12,
+  borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
     opacity: 0.8,
@@ -204,23 +204,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.9,
   },
-  topicItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    marginBottom: 8,
-  },
+  topicItem:{ flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:12,paddingHorizontal:18,borderRadius:12,marginBottom:8,borderWidth:1 },
   topicText: {
     flex: 1,
     fontSize: 15,
   },
   topicAction: {
     fontSize: 14,
-    color: "#0a7ea4",
     fontWeight: "500",
   },
 });

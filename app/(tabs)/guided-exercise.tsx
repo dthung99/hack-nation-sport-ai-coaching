@@ -4,7 +4,11 @@ import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Animated, StyleSheet, TouchableOpacity, View, Dimensions, ScrollView } from "react-native";
+
+const { width: screenWidth } = Dimensions.get('window');
+const isTablet = screenWidth > 768;
+const isLargeScreen = screenWidth > 1024;
 
 export default function GuidedExerciseScreen() {
   const [isActive, setIsActive] = useState(false);
@@ -138,91 +142,88 @@ export default function GuidedExerciseScreen() {
     setPhaseTimer(4);
   };
 
+  // Unified palette similar to main screen
+  const isDark = (colorScheme ?? 'light') === 'dark';
+  const palette = React.useMemo(()=>({
+    accent: isDark ? '#0a84ff' : Colors[colorScheme ?? 'light'].tint,
+    surface: isDark ? '#1F2223' : '#f5f5f5',
+    surfaceAlt: isDark ? '#242728' : '#ffffff',
+    border: isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)',
+    muted: isDark ? 'rgba(255,255,255,0.68)' : '#333',
+    mutedStrong: isDark ? 'rgba(255,255,255,0.78)' : '#222'
+  }),[isDark,colorScheme]);
+
   return (
-    <ThemedView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <ThemedText type="title">Breathing Exercise</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Follow the animation to calm your mind
-        </ThemedText>
-      </View>
-
-      {/* Animation Area */}
-      <View style={styles.animationContainer}>
-        <Animated.View
-          style={[
-            styles.breathingCircle,
-            {
-              backgroundColor: Colors[colorScheme ?? "light"].tint,
-              transform: [{ scale: scaleAnim }],
-              opacity: opacityAnim,
-            },
-          ]}
-        >
-          <ThemedText style={styles.instructionText}>
-            {getInstructionText()}
+    <ThemedView style={[styles.container]}> 
+      <ScrollView contentContainerStyle={[styles.contentWrapper,{ paddingHorizontal:isLargeScreen?48:(isTablet?36:20) }]}> 
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText type="title">Breathing Exercise</ThemedText>
+          <ThemedText style={[styles.subtitle,{ color: palette.muted }]}>
+            Follow the animation to calm your mind
           </ThemedText>
-        </Animated.View>
-      </View>
-
-      {/* Timer */}
-      <View style={styles.timerContainer}>
-        <ThemedText style={styles.timerText}>
-          {Math.floor(countdown / 60)}:
-          {(countdown % 60).toString().padStart(2, "0")}
-        </ThemedText>
-      </View>
-
-      {/* Controls */}
-      <View style={styles.controlsContainer}>
-        {!isActive ? (
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              { backgroundColor: Colors[colorScheme ?? "light"].tint },
-            ]}
-            onPress={handleStart}
-          >
-            <ThemedText style={styles.buttonText}>Start</ThemedText>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <TouchableOpacity
+        </View>
+        <View style={[styles.surfaceCard,{ backgroundColor: palette.surfaceAlt, borderColor: palette.border }]}> 
+          {/* Animation Area */}
+          <View style={styles.animationContainer}>
+            <Animated.View
               style={[
-                styles.controlButton,
-                { backgroundColor: Colors[colorScheme ?? "light"].tint },
+                styles.breathingCircle,
+                {
+                  backgroundColor: palette.accent,
+                  transform: [{ scale: scaleAnim }],
+                  opacity: opacityAnim,
+                },
               ]}
-              onPress={handlePauseResume}
             >
-              <ThemedText style={styles.buttonText}>
-                {isPaused ? "Resume" : "Pause"}
+              <ThemedText style={styles.instructionText}>
+                {getInstructionText()}
               </ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.endButton,
-                { backgroundColor: Colors[colorScheme ?? "light"].icon },
-              ]}
-              onPress={handleEndSession}
-            >
-              <ThemedText style={styles.buttonText}>End Session</ThemedText>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+            </Animated.View>
+          </View>
+          {/* Timer */}
+          <View style={styles.timerContainer}>
+            <ThemedText style={styles.timerText}>
+              {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, "0")}
+            </ThemedText>
+          </View>
+          {/* Controls */}
+          <View style={styles.controlsContainer}>
+            {!isActive ? (
+              <TouchableOpacity
+                style={[styles.controlButton,{ backgroundColor: palette.accent }]}
+                onPress={handleStart}
+              >
+                <ThemedText style={styles.buttonText}>Start</ThemedText>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.controlButton,{ backgroundColor: palette.accent }]}
+                  onPress={handlePauseResume}
+                >
+                  <ThemedText style={styles.buttonText}>{isPaused ? "Resume" : "Pause"}</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.endButton,{ backgroundColor: isDark?'#3a3d3e':Colors[colorScheme ?? 'light'].icon }]}
+                  onPress={handleEndSession}
+                >
+                  <ThemedText style={styles.buttonText}>End Session</ThemedText>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-  },
+  container: { flex:1,paddingTop:isTablet?72:56 },
+  contentWrapper:{ width:'100%',maxWidth:1000,alignSelf:'center',paddingBottom:48 },
   header: {
-    padding: 20,
+    paddingVertical: 8,
     alignItems: "center",
   },
   subtitle: {
@@ -230,11 +231,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     opacity: 0.7,
   },
+  surfaceCard:{ borderWidth:1,borderRadius:32,padding:isTablet?40:24,marginTop:isTablet?16:8 },
   animationContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: isTablet?40:24,
   },
   breathingCircle: {
     width: 200,
@@ -249,20 +250,12 @@ const styles = StyleSheet.create({
     color: "white",
     textAlign: "center",
   },
-  timerContainer: {
-    alignItems: "center",
-    paddingVertical: 20,
-  },
+  timerContainer: { alignItems:'center',paddingVertical:20 },
   timerText: {
     fontSize: 32,
     fontWeight: "bold",
   },
-  controlsContainer: {
-    alignItems: "center",
-    paddingVertical: 30,
-    paddingBottom: 40,
-    gap: 15,
-  },
+  controlsContainer:{ alignItems:'center',paddingVertical:24,gap:16 },
   controlButton: {
     paddingHorizontal: 40,
     paddingVertical: 15,
