@@ -63,6 +63,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="multi-agent-demo"
+        options={{
+          title: "Debug",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="wrench.and.screwdriver" color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

@@ -1,3 +1,85 @@
+# sport-ai
+
+AI sport coaching prototype (Expo / React Native) with ElevenLabs real-time multi-agent voice handoff.
+
+## Multi-Agent ElevenLabs Conversation
+
+This project now supports orchestrating TWO (or more) ElevenLabs agents with contextual handoff. Typical use case: a Calm Mentor and a High-Energy Motivator that can switch mid-session while preserving conversation context.
+
+### Environment Variables
+
+Create a `.env` (not committed) with:
+
+```
+EXPO_PUBLIC_AGENT_MENTOR_ID=xxxxxxxxxxxxxxxxxxxxxxxx
+EXPO_PUBLIC_AGENT_MOTIVATOR_ID=yyyyyyyyyyyyyyyyyyyy
+```
+
+Because these are PUBLIC agent IDs they can be exposed as `EXPO_PUBLIC_` vars (Expo automatically inlines them). If you later use PRIVATE agents you must implement a backend that returns a signed URL per session instead of embedding agent IDs.
+
+Current fallback support: if you still have legacy names `AGENT_TED_ID` / `AGENT_WILLIS_ID` in your `.env`, the hook will pick them up (dev only). For production builds rename them to the `EXPO_PUBLIC_...` versions above so the values are embedded in the bundle.
+
+Restart the Expo server after adding env vars.
+
+### Hook Usage
+
+Use the new `useMultiAgentHandoff` hook:
+
+```tsx
+import { useMultiAgentHandoff } from '@/hooks/useMultiAgentHandoff';
+
+export function CoachingSession() {
+   const convo = useMultiAgentHandoff();
+
+   return (
+      <View>
+         <Button title={convo.status === 'connected' ? 'Stop' : 'Start'} onPress={() => convo.status === 'connected' ? convo.stop() : convo.start()} />
+         <Button title="Boost Motivation" onPress={() => convo.handoffTo('motivator', 'User requested more energy')} />
+         <Button title="Calm Down" onPress={() => convo.handoffTo('mentor', 'User needs calming guidance')} />
+      </View>
+   );
+}
+```
+
+### Automatic Handoff Triggers
+
+Each agent can declare `handoffTriggerKeywords`. When the user sends a text message containing one of those keywords, the hook will:
+1. Handoff to the corresponding agent.
+2. Send a summarized context + style instructions to the new agent.
+3. Forward the triggering user message to the new agent.
+
+### Manual Handoff
+
+Call `handoffTo(agentKey, optionalReason)`.
+
+### Transcript
+
+The hook accumulates a simple transcript (`transcript` array) with system / user / agent messages. On handoff it composes a lightweight, truncated context summary and sends it via `sendContextualUpdate` to the new agent.
+
+### Extending to Private Agents
+
+Add a `signedUrlEndpoint` per agent and branch in `internalStart` similarly to the single-agent `useElevenConversation` hook. Never expose private agent signed URLs client-side.
+
+---
+
+## Development
+
+Install deps and run:
+
+```
+npm install
+npx expo start
+```
+
+Open on web, iOS, or Android. Ensure microphone permissions are granted for real-time audio.
+
+## Existing Single-Agent Hook
+
+`useElevenConversation` remains available for simple single-agent sessions.
+
+## License
+
+MIT (prototype / hackathon).
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
