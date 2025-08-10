@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint", 
+    "lint": "expo lint",
     "clean": "rm -rf node_modules .expo .expo-shared && npm i"
   },
   "dependencies": {
@@ -39,7 +39,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "expo-av": "~15.1.7"
+    "expo-av": "~15.1.7",
+    "expo-audio": "~0.4.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

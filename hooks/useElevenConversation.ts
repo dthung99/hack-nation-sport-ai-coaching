@@ -1,5 +1,7 @@
+import { Conversation } from '@elevenlabs/client';
+import { Audio } from 'expo-av';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 
 // Minimal hook that exposes start/stop and a few reactive state flags
 // Mirrors logic from integrate_me.txt but adapted for React Native + web (Expo)
@@ -37,18 +39,25 @@ export function useElevenConversation(options: UseElevenConversationOptions): El
   const convoRef = useRef<any | null>(null);
 
   // Request microphone permissions (web + native). On native, we rely on expo-av previously; here we just attempt getUserMedia on web.
+
+  // Use the working permission code from your example:
   const requestMicPermission = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      try {
-        await (navigator as any).mediaDevices.getUserMedia({ audio: true });
+    try {
+      console.log("Requesting permissions..");
+      const permission = await Audio.requestPermissionsAsync();
+
+      if (permission.status === "granted") {
+        console.log("Audio permission granted");
         return true;
-      } catch (e: any) {
-        setError('Microphone permission denied: ' + (e?.message || String(e)));
+      } else {
+        setError("Please grant microphone permission to use voice chat");
         return false;
       }
+    } catch (error: any) {
+      console.error("Error requesting permissions:", error);
+      setError("Error requesting microphone permission: " + (error?.message || String(error)));
+      return false;
     }
-    // On native assume separate permission flow handled by caller.
-    return true;
   }, []);
 
   const start = useCallback(async () => {
@@ -79,8 +88,6 @@ export function useElevenConversation(options: UseElevenConversationOptions): El
       };
 
   // Dynamic import to avoid bundler evaluating the SDK until actually needed (helps with web build issues)
-  const { Conversation } = await import('@elevenlabs/client');
-
   if (usePublicAgent) {
         if (!publicAgentId) throw new Error('publicAgentId required when usePublicAgent=true');
         convoRef.current = await (Conversation as any).startSession({
