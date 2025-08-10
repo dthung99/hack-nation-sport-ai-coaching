@@ -21,14 +21,11 @@ interface Message {
 }
 
 export default function HomeScreen() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [showCoach, setShowCoach] = useState(true); // toggle widget visibility
+  const [showCoach, setShowCoach] = useState(false);
+  const AGENT_ID = (Constants?.expoConfig?.extra as any)?.elevenAgentId;
+
   const colorScheme = useColorScheme();
   const scrollRef = useRef<ScrollView>(null);
-
-  const AGENT_ID =
-    (Constants?.expoConfig?.extra as any)?.elevenAgentId ??
-    "agent_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // fallback for dev
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -118,7 +115,10 @@ export default function HomeScreen() {
       </View>
 
       {/* Convai Widget (WebView). Keep visible so user can tap mic. */}
-      {showCoach && <AgentWidget agentId={AGENT_ID} />}
+      {showCoach && <AgentWidget agentId={AGENT_ID} visible={false} onClose={function (): void {
+        throw new Error("Function not implemented.");
+      } } />}
+      
     </ThemedView>
   );
 }
