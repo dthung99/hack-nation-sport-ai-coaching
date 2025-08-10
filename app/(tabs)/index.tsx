@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "white",
+    color: "black", // This should be white, but let's make it more explicit
   },
   instructionsContainer: {
     alignItems: "center",
