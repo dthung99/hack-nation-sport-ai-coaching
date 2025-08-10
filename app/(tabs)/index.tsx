@@ -1,12 +1,14 @@
+import AgentWidget from "@/components/AgentWeb"; // ⬅️ the Convai widget wrapper
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import Constants from "expo-constants";
+import React, { useEffect, useRef, useState } from "react";
 import { useElevenConversation } from "@/hooks/useElevenConversation";
 import { Audio } from "expo-av";
 import { useEffect, useState } from "react"; // Add useEffect import
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,11 +25,13 @@ interface Message {
 
 export default function HomeScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null); // Add permission state
+  const [showCoach, setShowCoach] = useState(true); // ⬅️ toggle widget visibility
   const colorScheme = useColorScheme();
+  const scrollRef = useRef<ScrollView>(null);
 
+  const AGENT_ID =
+    (Constants?.expoConfig?.extra as any)?.elevenAgentId ??
+    "agent_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // fallback for dev
   // ElevenLabs conversation hook (configure as needed)
   const conversation = useElevenConversation({
     usePublicAgent: true, // set false and implement backend for private agents
@@ -125,21 +129,9 @@ export default function HomeScreen() {
       // TODO: Process audio file here
       console.log("Audio file ready for API:", uri);
 
-      // Mock AI response after 1 second
-      setTimeout(() => {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "I hear you! This is where the AI response would go after processing your audio.",
-          isUser: false,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      }, 1000);
-    } catch (error) {
-      console.error("Error stopping recording:", error);
-      // Alert.alert("Error", "Failed to stop recording");
-    }
-  };
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages.length]);
 
   const renderMessage = (message: Message) => (
     <View
@@ -171,64 +163,13 @@ export default function HomeScreen() {
     </View>
   );
 
-  // Show loading state while checking permissions
-  if (hasPermission === null) {
-    return (
-      <ThemedView
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <ThemedText>Requesting microphone permission...</ThemedText>
-      </ThemedView>
-    );
-  }
-
-  // Show permission denied state
-  if (hasPermission === false) {
-    return (
-      <ThemedView
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center", padding: 20 },
-        ]}
-      >
-        <ThemedText
-          type="title"
-          style={{ textAlign: "center", marginBottom: 20 }}
-        >
-          Microphone Permission Required
-        </ThemedText>
-        <ThemedText
-          style={{ textAlign: "center", marginBottom: 30, opacity: 0.7 }}
-        >
-          This app needs microphone access to record your voice messages for the
-          AI coach.
-        </ThemedText>
-        <TouchableOpacity
-          style={[
-            styles.recordButton,
-            { backgroundColor: Colors[colorScheme ?? "light"].tint },
-          ]}
-          onPress={requestPermissions}
-        >
-          <Text style={styles.recordButtonText}>🎤</Text>
-        </TouchableOpacity>
-        <ThemedText style={styles.recordHint}>
-          Tap to grant permission
-        </ThemedText>
-      </ThemedView>
-    );
-  }
-
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <ThemedText type="title">AI Coach</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Hold the button to talk with your mental wellness coach
+          Tap the floating mic to talk with your mindfulness coach
         </ThemedText>
         {/* Conversation controls */}
         <View style={styles.conversationRow}>
@@ -250,15 +191,19 @@ export default function HomeScreen() {
         </ThemedText>
       </View>
 
-      {/* Chat Messages */}
+      {/* Chat Messages (optional log for later features) */}
       <ScrollView
+        ref={scrollRef}
         style={styles.chatContainer}
         contentContainerStyle={styles.chatContent}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
       >
         {messages.length === 0 ? (
           <View style={styles.emptyState}>
             <ThemedText style={styles.emptyText}>
-              Press and hold the microphone to start your conversation
+              Use the coach bubble below. We’ll add transcripts here later.
             </ThemedText>
           </View>
         ) : (
@@ -266,34 +211,41 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Record Button */}
+      {/* Toggle Coach (shows/hides the widget) */}
       <View style={styles.recordSection}>
         <TouchableOpacity
           style={[
             styles.recordButton,
             {
-              backgroundColor: isRecording
+              backgroundColor: showCoach
                 ? Colors[colorScheme ?? "light"].tint
                 : Colors[colorScheme ?? "light"].icon,
             },
           ]}
-          onPressIn={handleStartRecording}
-          onPressOut={handleStopRecording}
-          activeOpacity={0.8}
+          onPress={() => setShowCoach((v) => !v)}
+          activeOpacity={0.9}
         >
           <Text style={styles.recordButtonText}>
-            {isRecording ? "🔴" : "🎤"}
+            {showCoach ? "🟢" : "🎤"}
           </Text>
         </TouchableOpacity>
         <ThemedText style={styles.recordHint}>
-          {isRecording ? "Recording..." : "Hold to record"}
+          {showCoach ? "Coach visible • tap the bubble" : "Show coach"}
         </ThemedText>
       </View>
+
+      {/* Convai Widget (WebView). Keep visible so user can tap mic. */}
+      {showCoach && <AgentWidget agentId={AGENT_ID} />}
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, paddingTop: 60 },
+  header: { padding: 20, alignItems: "center" },
+  subtitle: { textAlign: "center", marginTop: 8, opacity: 0.7 },
+  chatContainer: { flex: 1, paddingHorizontal: 20 },
+  chatContent: { paddingBottom: 20 },
   container: {
     flex: 1,
     paddingTop: 60,
@@ -346,38 +298,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 40,
   },
-  emptyText: {
-    textAlign: "center",
-    opacity: 0.6,
-    fontSize: 16,
-  },
+  emptyText: { textAlign: "center", opacity: 0.6, fontSize: 16 },
   messageContainer: {
     maxWidth: "80%",
     padding: 12,
     borderRadius: 16,
     marginVertical: 4,
   },
-  userMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#0a7ea4",
-  },
-  aiMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#f0f0f0",
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  timestamp: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  recordSection: {
-    alignItems: "center",
-    paddingVertical: 30,
-    paddingBottom: 40,
-  },
+  userMessage: { alignSelf: "flex-end", backgroundColor: "#0a7ea4" },
+  aiMessage: { alignSelf: "flex-start", backgroundColor: "#f0f0f0" },
+  messageText: { fontSize: 16 },
+  timestamp: { fontSize: 12, opacity: 0.7, marginTop: 4 },
+  recordSection: { alignItems: "center", paddingVertical: 30, paddingBottom: 40 },
   recordButton: {
     width: 80,
     height: 80,
@@ -389,12 +321,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  recordButtonText: {
-    fontSize: 32,
-  },
-  recordHint: {
-    marginTop: 12,
-    fontSize: 14,
-    opacity: 0.7,
-  },
+  recordButtonText: { fontSize: 32 },
+  recordHint: { marginTop: 12, fontSize: 14, opacity: 0.7 },
 });

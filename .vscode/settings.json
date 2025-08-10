@@ -11,6 +11,7 @@
     "**/.DS_Store": true,
     "**/Thumbs.db": true
   },
+  "CodeGPT.apiKey": "CodeGPT Plus Beta",
   "hide-files.files": [],
   "build-ai-context.summary-tool.track": [
     "app",
