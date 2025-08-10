@@ -1,19 +1,63 @@
-// app/(tabs)/index.tsx
+import AgentWidget from "@/components/AgentWeb";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { useElevenConversation } from "@/hooks/useElevenConversation";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import Constants from "expo-constants";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+interface Message {
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
+}
 
 export default function HomeScreen() {
+  const [showCoach, setShowCoach] = useState(false);
+  const AGENT_ID = (Constants?.expoConfig?.extra as any)?.elevenAgentId;
   const colorScheme = useColorScheme();
 
-  // ElevenLabs conversation hook
-  const conversation = useElevenConversation({
-    usePublicAgent: true,
-    publicAgentId: "agent_0701k284yrmjfgksrhc5cw0wg2em",
-  });
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages.length]);
+
+  const renderMessage = (message: Message) => (
+    <View
+      key={message.id}
+      style={[
+        styles.messageContainer,
+        message.isUser ? styles.userMessage : styles.aiMessage,
+      ]}
+    >
+      <ThemedText
+        style={[
+          styles.messageText,
+          message.isUser ? { color: "#fff" } : { color: "#333" },
+        ]}
+      >
+        {message.text}
+      </ThemedText>
+      <ThemedText
+        style={[
+          styles.timestamp,
+          message.isUser ? { color: "#fff" } : { color: "#666" },
+        ]}
+      >
+        {message.timestamp.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </ThemedText>
+    </View>
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -24,25 +68,24 @@ export default function HomeScreen() {
           Talk naturally with your mental wellness coach
         </ThemedText>
       </View>
-
-      {/* Main Content */}
-      <View style={styles.mainContent}>
-        {/* Status Display */}
-        <View style={styles.statusContainer}>
-          <ThemedText style={styles.statusText}>
-            Status: {conversation.status}
-          </ThemedText>
-          {conversation.isSpeaking && (
-            <ThemedText style={styles.speakingText}>
-              🎤 AI is speaking...
+      <ScrollView
+        ref={scrollRef}
+        style={styles.chatContainer}
+        contentContainerStyle={styles.chatContent}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
+      >
+        {messages.length === 0 ? (
+          <View style={styles.emptyState}>
+            <ThemedText style={styles.emptyText}>
+              Use the coach bubble below. We’ll add transcripts here later.
             </ThemedText>
-          )}
-        </View>
-
-        {/* Error Display */}
-        {conversation.error ? (
-          <ThemedText style={styles.errorText}>{conversation.error}</ThemedText>
-        ) : null}
+          </View>
+        ) : (
+          messages.map(renderMessage)
+        )}
+      </ScrollView>
 
         {/* Conversation Controls */}
         <View style={styles.controlsContainer}>
@@ -83,27 +126,23 @@ export default function HomeScreen() {
           </ThemedText>
         </View>
       </View>
+      {/* Convai Widget (WebView). Keep visible so user can tap mic. */}
+      {showCoach && <AgentWidget agentId={AGENT_ID} visible={false} onClose={function (): void {
+        throw new Error("Function not implemented.");
+      } } />}
+      
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, paddingTop: 60 },
+  header: { padding: 20, alignItems: "center" },
+  subtitle: { textAlign: "center", marginTop: 8, opacity: 0.7 },
+  chatContainer: { flex: 1, paddingHorizontal: 20 },
+  chatContent: { paddingBottom: 20 },
+  emptyState: {
     flex: 1,
-    paddingTop: 60,
-  },
-  header: {
-    padding: 20,
-    alignItems: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-    marginTop: 8,
-    opacity: 0.7,
-  },
-  mainContent: {
-    flex: 1,
-    paddingHorizontal: 20,
     justifyContent: "center",
   },
   statusContainer: {
@@ -155,4 +194,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     lineHeight: 24,
   },
+  recordButtonText: { fontSize: 32 },
+  recordHint: { marginTop: 12, fontSize: 14, opacity: 0.7 },
 });
