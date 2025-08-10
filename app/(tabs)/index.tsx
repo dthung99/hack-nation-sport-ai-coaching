@@ -128,7 +128,7 @@ export default function MyCoachTeamScreen() {
 										</View>
 									</View>
 									<View style={styles.actionButtons}>
-										<TouchableOpacity style={[styles.actionButton, convo.currentAgentKey === coach.id ? styles.actionButtonActive : styles.actionButtonInactive]} onPress={()=>startWithCoach(coach.id)}>
+										<TouchableOpacity style={[styles.actionButton, convo.currentAgentKey === coach.id ? styles.actionButtonActive : { backgroundColor: palette.activeAccent }]} onPress={()=>startWithCoach(coach.id)}>
 											<ThemedText style={[styles.actionButtonText, convo.currentAgentKey === coach.id ? styles.actionButtonTextActive : undefined]}>{convo.status==='connected'&&convo.currentAgentKey===coach.id?'Active':`Start with ${coach.name}`}</ThemedText>
 										</TouchableOpacity>
 									</View>
@@ -214,12 +214,10 @@ const styles = StyleSheet.create({
 	specialtyText:{fontSize:isTablet?14:12,opacity:0.8},
 	actionButtons:{flexDirection:isTablet?'row':'column',gap:isTablet?14:10,marginTop:isTablet?14:12},
 	actionButton:{flex:isTablet?1:undefined,paddingVertical:isTablet?12:10,paddingHorizontal:isTablet?18:15,borderRadius:16,alignItems:'center',minHeight:isTablet?48:42,justifyContent:'center'},
-	actionButtonInactive:{backgroundColor: Colors[(useColorScheme()??'light')].tint},
 	actionButtonActive:{backgroundColor:'rgba(255,255,255,0.18)',borderWidth:1,borderColor:'rgba(255,255,255,0.25)'},
 	secondaryButton:{},
 	actionButtonText:{fontSize:isTablet?16:14,fontWeight:'500',textAlign:'center'},
 	actionButtonTextActive:{color:'#ffffff'},
-	secondaryButtonText:{color:'#333'},
 	transcriptSection:{maxHeight:170,paddingHorizontal:18,paddingVertical:14,borderTopWidth:1},
 	transcriptTitle:{fontSize:15,fontWeight:'600',marginBottom:10,opacity:0.7},
 	lastSwitchRow:{flexDirection:'row',alignItems:'flex-start',marginBottom:isTablet?8:6,gap:6},
