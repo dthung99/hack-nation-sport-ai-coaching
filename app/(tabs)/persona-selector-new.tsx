@@ -133,174 +133,126 @@ export default function CoachScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Main Content Layout (Coaches + Transcript side panel on wide screens) */}
-      <View style={[styles.mainRow, (isTablet || isLargeScreen) && styles.mainRowWide]}>
-        <View style={[styles.leftColumn]}>
-          {/* Coach Cards */}
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+      {/* Coach Cards */}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.coachGrid}>
+        {coaches.map((coach) => (
+          <View
+            key={coach.id}
+            style={[
+              styles.coachCard,
+              convo.currentAgentKey === coach.id && {
+                backgroundColor: Colors[colorScheme ?? "light"].tint,
+                opacity: 0.9,
+              },
+            ]}
           >
-            <View style={styles.coachGrid}>
-            {coaches.map((coach) => (
-              <View
-                key={coach.id}
+            <View style={styles.cardHeader}>
+              <ThemedText style={styles.emoji}>{coach.emoji}</ThemedText>
+              <View style={styles.cardContent}>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[
+                    styles.coachName,
+                    convo.currentAgentKey === coach.id && { color: "white" },
+                  ]}
+                >
+                  {coach.name}
+                </ThemedText>
+                <ThemedText
+                  style={[
+                    styles.description,
+                    convo.currentAgentKey === coach.id && {
+                      color: "white",
+                      opacity: 0.9,
+                    },
+                  ]}
+                >
+                  {coach.description}
+                </ThemedText>
+                
+                {/* Specialties */}
+                <View style={styles.specialtiesContainer}>
+                  {coach.specialties.slice(0, isTablet ? 4 : 2).map((specialty, index) => (
+                    <View key={index} style={[
+                      styles.specialtyTag,
+                      convo.currentAgentKey === coach.id && { backgroundColor: "rgba(255,255,255,0.2)" }
+                    ]}>
+                      <ThemedText style={[
+                        styles.specialtyText,
+                        convo.currentAgentKey === coach.id && { color: "white" }
+                      ]}>
+                        {specialty}
+                      </ThemedText>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
                 style={[
-                  styles.coachCard,
-                  convo.currentAgentKey === coach.id && {
-                    backgroundColor: Colors[colorScheme ?? "light"].tint,
-                    opacity: 0.9,
+                  styles.actionButton,
+                  {
+                    backgroundColor:
+                      convo.currentAgentKey === coach.id
+                        ? "rgba(255,255,255,0.2)"
+                        : Colors[colorScheme ?? "light"].tint,
                   },
                 ]}
+                onPress={() => startWithCoach(coach.id)}
+                activeOpacity={0.8}
               >
-                {convo.currentAgentKey === coach.id && convo.lastSwitch?.to === coach.id && (
-                  <View style={styles.switchBadge}>
-                    <ThemedText style={styles.switchBadgeText}>
-                      {convo.lastSwitch.metaType === 'manual' && 'Manual switch'}
-                      {convo.lastSwitch.metaType === 'auto-keyword' && 'Keyword switch'}
-                      {convo.lastSwitch.metaType === 'agent-initiated' && 'Agent suggested'}
-                      {convo.lastSwitch.metaType === 'explicit-marker' && 'Marker switch'}
-                    </ThemedText>
-                  </View>
-                )}
-                <View style={styles.cardHeader}>
-                  <ThemedText style={styles.emoji}>{coach.emoji}</ThemedText>
-                  <View style={styles.cardContent}>
-                    <ThemedText
-                      type="defaultSemiBold"
-                      style={[
-                        styles.coachName,
-                        convo.currentAgentKey === coach.id && { color: "white" },
-                      ]}
-                    >
-                      {coach.name}
-                    </ThemedText>
-                    <ThemedText
-                      style={[
-                        styles.description,
-                        convo.currentAgentKey === coach.id && {
-                          color: "white",
-                          opacity: 0.9,
-                        },
-                      ]}
-                    >
-                      {coach.description}
-                    </ThemedText>
-                    <View style={styles.specialtiesContainer}>
-                      {coach.specialties.slice(0, isTablet ? 4 : 2).map((specialty, index) => (
-                        <View key={index} style={[
-                          styles.specialtyTag,
-                          convo.currentAgentKey === coach.id && { backgroundColor: "rgba(255,255,255,0.2)" }
-                        ]}>
-                          <ThemedText style={[
-                            styles.specialtyText,
-                            convo.currentAgentKey === coach.id && { color: "white" }
-                          ]}>
-                            {specialty}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      {
-                        backgroundColor:
-                          convo.currentAgentKey === coach.id
-                            ? "rgba(255,255,255,0.2)"
-                            : Colors[colorScheme ?? "light"].tint,
-                      },
-                    ]}
-                    onPress={() => startWithCoach(coach.id)}
-                    activeOpacity={0.8}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.actionButtonText,
-                        { color: "white" }
-                      ]}
-                    >
-                      {convo.status === 'connected' && convo.currentAgentKey === coach.id ? 'Active' : `Start with ${coach.name}`}
-                    </ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.secondaryButton,
-                      {
-                        backgroundColor:
-                          convo.currentAgentKey === coach.id
-                            ? "rgba(255,255,255,0.2)"
-                            : "rgba(0,0,0,0.1)",
-                      },
-                    ]}
-                    onPress={() => tryCoachPhrase(coach.samplePhrase)}
-                    activeOpacity={0.8}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.actionButtonText,
-                        styles.secondaryButtonText,
-                        convo.currentAgentKey === coach.id && { color: "white" }
-                      ]}
-                    >
-                      Try Sample
-                    </ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {(isTablet || isLargeScreen) && (
-          <View style={styles.rightPanel}>
-            <ThemedText style={styles.rightPanelTitle}>Recent Conversation</ThemedText>
-            {convo.lastSwitch && (
-              <View style={styles.lastSwitchRow}>
-                <ThemedText style={styles.lastSwitchLabel}>Last Switch:</ThemedText>
-                <ThemedText style={styles.lastSwitchText} numberOfLines={3}>
-                  {convo.lastSwitch.from ? `${convo.lastSwitch.from} → ` : ''}{convo.lastSwitch.to} · {convo.lastSwitch.metaType}{convo.lastSwitch.reason ? ` · ${convo.lastSwitch.reason}` : ''}
+                <ThemedText
+                  style={[
+                    styles.actionButtonText,
+                    { color: "white" }
+                  ]}
+                >
+                  {convo.status === 'connected' && convo.currentAgentKey === coach.id ? 'Active' : `Start with ${coach.name}`}
                 </ThemedText>
-              </View>
-            )}
-            <FlatList
-              data={convo.transcript.slice(-10)}
-              keyExtractor={(item) => item.id}
-              style={styles.sideTranscript}
-              contentContainerStyle={styles.sideTranscriptContent}
-              renderItem={({ item }) => (
-                <View style={styles.sideMessageRow}>
-                  <ThemedText style={[styles.sideSender, item.sender === 'user' ? styles.miniUser : styles.miniAgent]}>
-                    {item.sender === 'user' ? 'You' : (item.agentKey ? `${item.agentKey}` : 'Coach')}:
-                  </ThemedText>
-                  <ThemedText style={styles.sideMessage} numberOfLines={4}>
-                    {item.text}
-                  </ThemedText>
-                </View>
-              )}
-            />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  styles.secondaryButton,
+                  {
+                    backgroundColor:
+                      convo.currentAgentKey === coach.id
+                        ? "rgba(255,255,255,0.2)"
+                        : "rgba(0,0,0,0.1)",
+                  },
+                ]}
+                onPress={() => tryCoachPhrase(coach.samplePhrase)}
+                activeOpacity={0.8}
+              >
+                <ThemedText
+                  style={[
+                    styles.actionButtonText,
+                    styles.secondaryButtonText,
+                    convo.currentAgentKey === coach.id && { color: "white" }
+                  ]}
+                >
+                  Try Sample
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-      </View>
+        ))}
+        </View>
+      </ScrollView>
 
-      {/* Bottom (mobile) transcript fallback */}
-      {!isTablet && !isLargeScreen && convo.transcript.length > 0 && (
+      {/* Conversation Transcript */}
+      {convo.transcript.length > 0 && (
         <View style={styles.transcriptSection}>
           <ThemedText style={styles.transcriptTitle}>Recent Conversation</ThemedText>
-          {convo.lastSwitch && (
-            <View style={styles.lastSwitchRow}>
-              <ThemedText style={styles.lastSwitchLabel}>Last Switch:</ThemedText>
-              <ThemedText style={styles.lastSwitchText} numberOfLines={2}>
-                {convo.lastSwitch.from ? `${convo.lastSwitch.from} → ` : ''}{convo.lastSwitch.to} · {convo.lastSwitch.metaType}{convo.lastSwitch.reason ? ` · ${convo.lastSwitch.reason}` : ''}
-              </ThemedText>
-            </View>
-          )}
           <FlatList
             data={convo.transcript.slice(-3)}
             keyExtractor={(item) => item.id}
@@ -326,51 +278,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: isTablet ? 80 : 60,
-  },
-  mainRow: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  mainRowWide: {
-    flexDirection: 'row',
-    paddingHorizontal: isTablet ? 20 : 0,
-  },
-  leftColumn: {
-    flex: 1,
-  },
-  rightPanel: {
-    width: isLargeScreen ? 380 : (isTablet ? 320 : 0),
-    paddingTop: isTablet ? 10 : 0,
-    paddingHorizontal: isTablet ? 16 : 0,
-  },
-  rightPanelTitle: {
-    fontSize: isTablet ? 18 : 16,
-    fontWeight: '600',
-    marginBottom: 10,
-    opacity: 0.75,
-  },
-  sideTranscript: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    borderRadius: 14,
-    backgroundColor: '#fafafa',
-  },
-  sideTranscriptContent: {
-    padding: 12,
-  },
-  sideMessageRow: {
-    marginBottom: 10,
-  },
-  sideSender: {
-    fontSize: isTablet ? 13 : 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  sideMessage: {
-    fontSize: isTablet ? 13 : 12,
-    lineHeight: isTablet ? 18 : 16,
-    opacity: 0.75,
   },
   header: {
     padding: isTablet ? 30 : 20,
@@ -426,21 +333,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     width: isLargeScreen ? '48%' : '100%',
-    position: 'relative'
-  },
-  switchBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  switchBadgeText: {
-    fontSize: isTablet ? 12 : 11,
-    color: 'white',
-    fontWeight: '600'
   },
   cardHeader: {
     flexDirection: "row",
@@ -515,22 +407,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: isTablet ? 12 : 8,
     opacity: 0.7,
-  },
-  lastSwitchRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: isTablet ? 8 : 6,
-    gap: 6,
-  },
-  lastSwitchLabel: {
-    fontSize: isTablet ? 13 : 11,
-    fontWeight: '600',
-    color: '#555'
-  },
-  lastSwitchText: {
-    flex: 1,
-    fontSize: isTablet ? 13 : 11,
-    color: '#333'
   },
   miniTranscript: {
     maxHeight: isTablet ? 100 : 80,

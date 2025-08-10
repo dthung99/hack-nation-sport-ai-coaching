@@ -4,7 +4,7 @@ AI sport coaching prototype (Expo / React Native) with ElevenLabs real-time mult
 
 ## Multi-Agent ElevenLabs Conversation
 
-This project now supports orchestrating TWO (or more) ElevenLabs agents with contextual handoff. Typical use case: a Calm Mentor and a High-Energy Motivator that can switch mid-session while preserving conversation context.
+This project now supports orchestrating multiple ElevenLabs agents with contextual handoff (currently three: Inner State, Strategy, Physical Training). They can switch mid-session while preserving conversation context, and each switch is now instrumented with provenance metadata (manual, keyword, agent-initiated, explicit marker).
 
 ### Environment Variables
 
@@ -23,7 +23,7 @@ Restart the Expo server after adding env vars.
 
 ### Hook Usage
 
-Use the new `useMultiAgentHandoff` hook:
+Use the `useMultiAgentHandoff` hook (the single-agent “Chat” tab has been removed; the multi‑agent experience lives directly at the root `index` route – "My Coach Team"):
 
 ```tsx
 import { useMultiAgentHandoff } from '@/hooks/useMultiAgentHandoff';
@@ -52,6 +52,18 @@ Each agent can declare `handoffTriggerKeywords`. When the user sends a text mess
 
 Call `handoffTo(agentKey, optionalReason)`.
 
+Each handoff triggers an `onAgentSwitch` callback (if provided) with:
+
+```ts
+interface AgentSwitchEvent {
+   from: string | null;
+   to: string;
+   reason?: string;
+   metaType: 'manual' | 'auto-keyword' | 'agent-initiated' | 'explicit-marker';
+   timestamp: number;
+}
+```
+
 ### Transcript
 
 The hook accumulates a simple transcript (`transcript` array) with system / user / agent messages. On handoff it composes a lightweight, truncated context summary and sends it via `sendContextualUpdate` to the new agent.
@@ -75,7 +87,7 @@ Open on web, iOS, or Android. Ensure microphone permissions are granted for real
 
 ## Existing Single-Agent Hook
 
-`useElevenConversation` remains available for simple single-agent sessions.
+`useElevenConversation` remains available for simple single-agent sessions (legacy), but the primary UX now uses multi-agent on the main screen.
 
 ## License
 

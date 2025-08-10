@@ -44,10 +44,11 @@ export interface MultiAgentConversationState {
   start: (agentKey?: string) => Promise<void>;
   stop: () => Promise<void>;
   sendText: (text: string) => void;
-  handoffTo: (agentKey: string, reason?: string) => Promise<void>;
+  handoffTo: (agentKey: string, reason?: string, metaType?: AgentSwitchMetaType) => Promise<void>;
   canSendFeedback: boolean;
   sendLike: () => void;
   sendDislike: () => void;
+  lastSwitch?: AgentSwitchEvent | null;
 }
 
 export interface UseMultiAgentOptions {
@@ -61,6 +62,17 @@ export interface UseMultiAgentOptions {
   forwardLastUserMessageOnManualHandoff?: boolean; // replay last user message to new agent (default true)
   manualHandoffBridgeMessage?: string | ((fromKey: string | null, toKey: string) => string); // system bridging line
   explicitHandoffMarkerPattern?: RegExp; // e.g. /\[HANDOFF:(\w+)\]/i
+  onAgentSwitch?: (evt: AgentSwitchEvent) => void; // callback when an agent switch occurs
+}
+
+export type AgentSwitchMetaType = 'manual' | 'auto-keyword' | 'agent-initiated' | 'explicit-marker';
+
+export interface AgentSwitchEvent {
+  from: string | null;
+  to: string;
+  reason?: string;
+  metaType: AgentSwitchMetaType;
+  timestamp: number;
 }
 
 // Helper to pull public agent IDs from env or app config extras.
@@ -115,6 +127,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
   forwardLastUserMessageOnManualHandoff = true,
   manualHandoffBridgeMessage = (from: string | null, to: string) => `Switching from ${from || 'unknown'} to ${to} for better support.`,
   explicitHandoffMarkerPattern = /\[HANDOFF:(\w+)\]/i,
+  onAgentSwitch,
   } = options;
 
   const agents = (providedAgents && providedAgents.length > 0) ? providedAgents : getDefaultAgents(debug);
@@ -126,6 +139,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
   const [lastEvent, setLastEvent] = useState<any>(null);
   const [canSendFeedback, setCanSendFeedback] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [lastSwitch, setLastSwitch] = useState<AgentSwitchEvent | null>(null);
 
   const convoRef = useRef<any | null>(null);
   const currentAgentRef = useRef<string | null>(currentAgentKey);
@@ -206,7 +220,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
                 const targetKey = markerMatch[1].toLowerCase();
                 if (targetKey !== agent.key && agents.some(a => a.key === targetKey)) {
                   if (debug) console.log('[MultiAgent] Explicit marker handoff ->', targetKey);
-                  handoffTo(targetKey, 'Explicit marker');
+                  handoffTo(targetKey, 'Explicit marker', 'explicit-marker');
                   return;
                 }
               }
@@ -221,7 +235,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
                     if (kw.some(k => lowerBuf.includes(k.toLowerCase()))) {
                       lastAgentHandoffAtRef.current = now;
                       if (debug) console.log('[MultiAgent] Agent-initiated handoff trigger ->', other.key, 'text:', buf);
-                      handoffTo(other.key, `Agent message suggested context shift (keywords for ${other.key})`);
+                      handoffTo(other.key, `Agent message suggested context shift (keywords for ${other.key})`, 'agent-initiated');
                       break;
                     }
                   }
@@ -275,17 +289,21 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
     await internalStart(agent);
   }, [agents, appendTranscript, currentAgentKey, internalStart]);
 
-  const handoffTo = useCallback(async (targetKey: string, reason?: string) => {
+  const handoffTo = useCallback(async (targetKey: string, reason?: string, metaType: AgentSwitchMetaType = 'manual') => {
     if (targetKey === currentAgentRef.current) return; // already active
     const target = agents.find(a => a.key === targetKey);
     if (!target) { setError(`Cannot handoff: unknown agent '${targetKey}'`); return; }
     setStatus('switching');
     const bridge = typeof manualHandoffBridgeMessage === 'function' ? manualHandoffBridgeMessage(currentAgentRef.current, target.key) : manualHandoffBridgeMessage;
     appendTranscript({ sender: 'system', agentKey: target.key, text: `${bridge}${reason ? ' (reason: ' + reason + ')' : ''}` });
-    if (debug) console.log('[MultiAgent] Handoff ->', target.key, 'reason:', reason);
+    if (debug) console.log('[MultiAgent] Handoff ->', target.key, 'reason:', reason, 'metaType:', metaType);
     try { await convoRef.current?.endSession(); } catch {}
     convoRef.current = null;
+    const fromKey = currentAgentRef.current;
     setCurrentAgentKey(target.key);
+    const evt: AgentSwitchEvent = { from: fromKey, to: target.key, reason, metaType, timestamp: Date.now() };
+    setLastSwitch(evt);
+    try { onAgentSwitch?.(evt); } catch (e) { if (debug) console.warn('[MultiAgent] onAgentSwitch callback error', e); }
     await internalStart(target);
     // After connect, send contextual update with summary
     setTimeout(() => {
@@ -321,7 +339,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
         if (agent.key === currentAgentRef.current) continue;
         if (agent.handoffTriggerKeywords && agent.handoffTriggerKeywords.some(k => lower.includes(k.toLowerCase()))) {
           if (debug) console.log('[MultiAgent] Auto handoff trigger ->', agent.key);
-          handoffTo(agent.key, `Keyword trigger: ${agent.handoffTriggerKeywords.join(', ')}`)
+          handoffTo(agent.key, `Keyword trigger: ${agent.handoffTriggerKeywords.join(', ')}`, 'auto-keyword')
             .then(() => {
               setTimeout(() => { try { convoRef.current?.sendUserMessage(trimmed); } catch {} }, 600);
             });
@@ -354,6 +372,7 @@ export function useMultiAgentHandoff(options: UseMultiAgentOptions = {}): MultiA
     canSendFeedback,
     sendLike,
     sendDislike,
+  lastSwitch,
   };
 }
 

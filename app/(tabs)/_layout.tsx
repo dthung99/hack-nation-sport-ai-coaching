@@ -13,6 +13,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: false,
@@ -30,9 +31,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Chat",
+          title: "My Coach Team",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="mic" color={color} />
+            <IconSymbol size={28} name="paperplane.fill" color={color} />
           ),
         }}
       />
@@ -42,15 +43,6 @@ export default function TabLayout() {
           title: "Exercise",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="persona-selector"
-        options={{
-          title: "Coach",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
           ),
         }}
       />
@@ -70,6 +62,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="wrench.and.screwdriver" color={color} />
           ),
+          href: null, // Hide this tab from the tab bar
+        }}
+      />
+      {/* Legacy cleanup: ensure old persona-selector route never renders a tab if cached */}
+      <Tabs.Screen
+        name="persona-selector"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
