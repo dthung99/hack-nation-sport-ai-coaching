@@ -10,5 +10,6 @@
     "**/.hg": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true
-  }
+  },
+  "CodeGPT.apiKey": "CodeGPT Plus Beta"
 }
